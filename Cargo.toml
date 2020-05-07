@@ -1,0 +1,21 @@
+[package]
+name = "nitripid"
+version = "0.1.0"
+authors = ["Knut Enners <knutenners+git@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+async-std = "1"
+config = "0.10"
+env_logger = "0.7"
+http-service-h1 = "0.1"
+http-service = "0.5"
+http-types = "1.2"
+log = "0.4"
+serde = { version = "1", features = ["derive"] }
+tide = { version = "0.8", default-features = true }
+#tera = "1.2"
+
+[dependencies.uuid]
+features = ["serde", "v4"]
+version = "0.8"
