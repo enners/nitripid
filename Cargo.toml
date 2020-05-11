@@ -14,6 +14,7 @@ http-types = "1.2"
 log = "0.4"
 serde = { version = "1", features = ["derive"] }
 tide = { version = "0.8", default-features = true }
+tower-service = "0.3"
 #tera = "1.2"
 
 [dependencies.uuid]

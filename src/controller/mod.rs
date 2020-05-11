@@ -1,1 +1,1 @@
-pub mod tide_web_controller;
+pub mod web;
