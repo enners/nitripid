@@ -1,4 +1,3 @@
-#[macro_use]
 extern crate log;
 
 use async_std::task;
@@ -19,13 +18,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     env_logger::init();
 
     let login_svc = service::login::LoginSvc {};
-
+    let web_controller = controller::web::LoginController::new(&login_svc);
     let state = State {};
     let address = format!("{}:{}", settings.server.address, settings.server.http.port);
     let mut httpd = tide::with_state(state);
     httpd
         .at("/")
-        .nest(controller::web::LoginController::add_router(login_svc));
+        .nest(controller::web::LoginController::add_router(
+            &web_controller,
+            login_svc,
+        ));
 
     task::block_on(async {
         httpd.listen(address).await?;

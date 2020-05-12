@@ -22,13 +22,22 @@ impl LoginController {
 
 async fn get_login_page(req: tide::Request<Services>) -> tide::Result<http::Response> {
     let mut lc = req.state().login;
-    info!("inside get login");
-    let plf = lc
+    let res = lc
         .call(crate::service::login::PasswdLoginForm {
             usrname: "todo",
             passwd: "sorry",
         })
-        .await?;
-    let res = format!("{}:{}", plf.usrname, plf.passwd);
-    Ok::<http::Response, http::Error>(http::Response::from(res))
+        .await
+        .map(|p| format!("{}:{}", p.usrname, p.passwd))
+        .map(|b| {
+            let mut r = http::Response::new(http::StatusCode::Ok);
+            r.set_body(b);
+            r
+        })
+        .map_err(|e| {
+            let mut r = http::Response::new(http::StatusCode::InternalServerError);
+            r.set_body(e.to_string());
+            e
+        });
+    tide::Result::from(res)
 }
