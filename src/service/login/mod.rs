@@ -1,7 +1,7 @@
-use http_types;
 use std::future::Future;
 use std::pin::Pin;
 use std::task::{Context, Poll};
+use tide::http;
 use tower_service::Service;
 
 pub struct PasswdLoginForm {
@@ -14,7 +14,7 @@ pub struct LoginSvc;
 
 impl Service<PasswdLoginForm> for LoginSvc {
     type Response = PasswdLoginForm;
-    type Error = http_types::Error;
+    type Error = http::Error;
     type Future =
         Pin<Box<dyn Future<Output = Result<Self::Response, Self::Error>> + Send + 'static>>;
 
@@ -23,12 +23,14 @@ impl Service<PasswdLoginForm> for LoginSvc {
     }
 
     fn call(&mut self, req: PasswdLoginForm) -> Self::Future {
-        let r = async {
+        let jinja = req.state().tmpl_engine;
+        let rrr = jinja.render("login.html");
+        /*let r = async {
             Result::Ok(PasswdLoginForm {
                 usrname: &"usrname",
                 passwd: &"passwd",
             })
-        };
-        Box::pin(r)
+        };*/
+        Box::pin(rrr)
     }
 }

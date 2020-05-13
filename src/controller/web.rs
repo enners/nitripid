@@ -1,26 +1,32 @@
 use crate::service;
 
-use http_types as http;
-use tide;
+use tide::{self, http};
 use tower_service::Service;
 
-pub struct Services {
-    login: service::login::LoginSvc,
+pub struct Context<'a, T: service::jinja::Jinja> {
+    pub login: service::login::LoginSvc,
+    pub tmpl_engine: &'a T,
 }
 
 pub struct LoginController {}
 
 impl LoginController {
-    pub fn add_router(login_svc: service::login::LoginSvc) -> tide::Server<Services> {
-        let mut router = tide::with_state(Services { login: login_svc });
+    pub fn router<T>(cx: Context<'static, T>) -> tide::Server<Context<T>>
+    where
+        T: service::jinja::Jinja,
+    {
+        let mut router = tide::with_state(cx);
         router
             .at("/login")
-            .get(move |req: tide::Request<Services>| get_login_page(req));
+            .get(move |req: tide::Request<Context<'static, T>>| get_login_page(req));
         router
     }
 }
 
-async fn get_login_page(req: tide::Request<Services>) -> tide::Result<http::Response> {
+async fn get_login_page<T>(req: tide::Request<Context<'_, T>>) -> tide::Result<http::Response>
+where
+    T: service::jinja::Jinja,
+{
     let mut lc = req.state().login;
     let res = lc
         .call(crate::service::login::PasswdLoginForm {
