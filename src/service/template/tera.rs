@@ -1,4 +1,4 @@
-use super::Jinja;
+use super::Render;
 use ext_tera::{Context, Tera};
 use serde::Serialize;
 use tera as ext_tera;
@@ -14,7 +14,7 @@ impl TeraEngine {
     }
 }
 
-impl Jinja for TeraEngine {
+impl Render for TeraEngine {
     fn render<T: Serialize>(&self, template: &str, cx: T) -> Result<String, String> {
         let context = Context::from_serialize(cx).unwrap();
         match self.engine.render(template, &context) {
@@ -44,8 +44,8 @@ mod tests {
         file.write_all(b"Hello, {{ you }}").unwrap();
         file.sync_all().unwrap();
 
-        let jinja = TeraEngine::new("/tmp/templates/**/*");
-        let page = jinja.render("bucket/hello.html", Values { you: "World" });
+        let tera = TeraEngine::new("/tmp/templates/**/*");
+        let page = tera.render("bucket/hello.html", Values { you: "World" });
         assert_eq!(page, Ok(String::from("Hello, World")));
 
         fs::remove_dir_all("/tmp/templates").unwrap();

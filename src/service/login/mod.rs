@@ -1,4 +1,4 @@
-use crate::service::jinja::Jinja;
+use crate::service::template::Render;
 use serde::Serialize;
 use std::future::Future;
 use std::pin::Pin;
@@ -7,14 +7,14 @@ use tower_service::Service;
 
 pub struct Svc<T>
 where
-    T: 'static + Jinja,
+    T: 'static + Render,
 {
     pub tmpl_engine: &'static T,
 }
 
 pub struct LoginRequest<T>
 where
-    T: Jinja + 'static,
+    T: Render + 'static,
 {
     pub svc: Svc<T>,
     pub usrname: &'static str,
@@ -23,6 +23,7 @@ where
 
 #[derive(Serialize)]
 pub struct PasswordLoginForm<'a> {
+    pub lang: &'a str,
     pub usrname: &'a str,
     pub passwd: &'a str,
 }
@@ -32,7 +33,7 @@ pub struct LoginSvc;
 
 impl<T> Service<LoginRequest<T>> for LoginSvc
 where
-    T: 'static + Jinja,
+    T: 'static + Render,
 {
     type Response = String;
     type Error = String;
@@ -50,6 +51,7 @@ where
             .render(
                 "login.html",
                 PasswordLoginForm {
+                    lang: &"en",
                     usrname: &"usrname",
                     passwd: &"passwd",
                 },

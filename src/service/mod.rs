@@ -1,2 +1,2 @@
-pub mod jinja;
 pub mod login;
+pub mod template;
