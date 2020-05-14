@@ -3,47 +3,48 @@ use crate::service;
 use tide::{self, http};
 use tower_service::Service;
 
-pub struct Context<'a, T: service::jinja::Jinja> {
+pub struct Context<T>
+where
+    T: 'static + service::jinja::Jinja,
+{
     pub login: service::login::LoginSvc,
-    pub tmpl_engine: &'a T,
+    pub tmpl_engine: &'static T,
 }
 
 pub struct LoginController {}
 
 impl LoginController {
-    pub fn router<T>(cx: Context<'static, T>) -> tide::Server<Context<T>>
+    pub fn router<T>(cx: Context<T>) -> tide::Server<Context<T>>
     where
-        T: service::jinja::Jinja,
+        T: service::jinja::Jinja + 'static,
     {
         let mut router = tide::with_state(cx);
         router
             .at("/login")
-            .get(move |req: tide::Request<Context<'static, T>>| get_login_page(req));
+            .get(move |req: tide::Request<Context<T>>| get_login_page(req));
         router
     }
 }
 
-async fn get_login_page<T>(req: tide::Request<Context<'_, T>>) -> tide::Result<http::Response>
+async fn get_login_page<T>(req: tide::Request<Context<T>>) -> tide::Result<http::Response>
 where
-    T: service::jinja::Jinja,
+    T: service::jinja::Jinja + 'static,
 {
     let mut lc = req.state().login;
-    let res = lc
-        .call(crate::service::login::PasswdLoginForm {
+    let te = req.state().tmpl_engine;
+    let res: std::result::Result<http::Response, http::Error> = lc
+        .call(crate::service::login::LoginRequest {
+            svc: service::login::Svc { tmpl_engine: te },
             usrname: "todo",
             passwd: "sorry",
         })
         .await
-        .map(|p| format!("{}:{}", p.usrname, p.passwd))
         .map(|b| {
             let mut r = http::Response::new(http::StatusCode::Ok);
             r.set_body(b);
             r
         })
-        .map_err(|e| {
-            let mut r = http::Response::new(http::StatusCode::InternalServerError);
-            r.set_body(e.to_string());
-            e
-        });
-    tide::Result::from(res)
+        .map_err(|e| http::Error::from_str(http::StatusCode::InternalServerError, e));
+    res
+    //    tide::Result::from(res)
 }

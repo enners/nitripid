@@ -17,10 +17,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .expect("failed to load configuration");
 
     let login_svc = service::login::LoginSvc {};
-    let tmpl_engine = tera::TeraEngine::new("web/templates");
+    let tera = tera::TeraEngine::new("web/templates");
     let web_cx = web::Context {
         login: login_svc,
-        tmpl_engine: tmpl_engine,
+        tmpl_engine: &tera,
     };
 
     let state = State {};

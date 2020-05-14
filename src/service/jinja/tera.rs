@@ -8,9 +8,9 @@ pub struct TeraEngine {
 }
 
 impl TeraEngine {
-    pub fn new(path: &str) -> &Self {
+    pub fn new(path: &str) -> Self {
         let t = Tera::new(path).expect("could not initialize template engine");
-        &TeraEngine { engine: t }
+        TeraEngine { engine: t }
     }
 }
 
