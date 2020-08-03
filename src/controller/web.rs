@@ -12,6 +12,13 @@ pub struct WebController<T>
 where
     T: service::template::Renderer + 'static,
 {
+    pub login_ep: LoginEndpoint<T>,
+}
+
+pub struct LoginEndpoint<T>
+where
+    T: service::template::Renderer + 'static,
+{
     pub login_svc: LoginSvc<T>,
 }
 
@@ -28,12 +35,12 @@ where
             .at("/static")
             .serve_dir("/home/knut/dev/rust/nitripid/web/static")
             .unwrap();
-        router.at("/login").get(ctrl);
+        router.at("/login").get(ctrl.login_ep);
         router
     }
 }
 
-impl<T> tide::Endpoint<Context> for WebController<T>
+impl<T> tide::Endpoint<Context> for LoginEndpoint<T>
 where
     T: service::template::Renderer,
 {
