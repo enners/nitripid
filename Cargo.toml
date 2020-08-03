@@ -8,7 +8,7 @@ edition = "2018"
 async-std = {version = "1", default-features = false, features = ["std"] }
 config = { version = "0.10", default-features = false, features = ["yaml"] }
 env_logger = "0.7"
-lazy_static = "1.4"
+#lazy_static = "1.4"
 #futures-util = "0.3"
 #http-service-h1 = "0.1"
 #http-service = "0.5"
@@ -18,7 +18,7 @@ serde = { version = "1", features = ["derive"] }
 tide = { version = "0.8", default-features = true }
 tower-service = "0.3"
 tera = "1.2"
+uuid = { version = "0.8", features = ["serde", "v4"], default-features = false }
 
-[dependencies.uuid]
-features = ["serde", "v4"]
-version = "0.8"
+[dev-dependencies]
+async-std = { version = "1", features = ["attributes"] }
