@@ -1,53 +1,68 @@
 use crate::service;
+use http_types;
+use service::login::LoginSvc;
+use std::future::Future;
+use std::pin::Pin;
 use tide::{self, http};
 use tower_service::Service;
 
-pub struct Context<T>
+pub struct Context {}
+
+pub struct WebController<T>
 where
-    T: 'static + service::template::Render,
+    T: service::template::Renderer + 'static,
 {
-    pub login: service::login::LoginSvc,
-    pub tmpl_engine: &'static T,
+    pub login_ep: LoginEndpoint<T>,
 }
 
-pub struct WebController {}
+pub struct LoginEndpoint<T>
+where
+    T: service::template::Renderer + 'static,
+{
+    pub login_svc: LoginSvc<T>,
+}
 
-impl WebController {
-    pub fn router<T>(cx: Context<T>) -> tide::Server<Context<T>>
+impl<T> WebController<T>
+where
+    T: service::template::Renderer + 'static,
+{
+    pub fn router(ctx: Context, ctrl: WebController<T>) -> tide::Server<Context>
     where
-        T: service::template::Render + 'static,
+        T: service::template::Renderer + 'static,
     {
-        let mut router = tide::with_state(cx);
+        let mut router = tide::with_state(ctx);
         router
             .at("/static")
             .serve_dir("/home/knut/dev/rust/nitripid/web/static")
             .unwrap();
-        router
-            .at("/login")
-            .get(move |req: tide::Request<Context<T>>| get_login_page(req));
+        router.at("/login").get(ctrl.login_ep);
         router
     }
 }
 
-async fn get_login_page<T>(req: tide::Request<Context<T>>) -> tide::Result<http::Response>
+impl<T> tide::Endpoint<Context> for LoginEndpoint<T>
 where
-    T: service::template::Render + 'static,
+    T: service::template::Renderer,
 {
-    let mut lc = req.state().login;
-    let te = req.state().tmpl_engine;
-    let res: std::result::Result<http::Response, http::Error> = lc
-        .call(crate::service::login::LoginRequest {
-            svc: service::login::Svc { tmpl_engine: te },
+    fn call<'a>(
+        &'a self,
+        _req: tide::Request<Context>,
+    ) -> Pin<Box<dyn Future<Output = tide::Result<tide::Response>> + Send + 'a>> {
+        let lreq = crate::service::login::LoginRequest {
             usrname: "todo",
             passwd: "sorry",
+        };
+        let mut svc = self.login_svc.clone();
+        Box::pin(async move {
+            svc.call(lreq)
+                .await
+                .map(|b| {
+                    let mut r = http_types::Response::new(http_types::StatusCode::Ok);
+                    r.set_body(b);
+                    r.insert_header("Content-Type", "text/html").unwrap();
+                    tide::Response::from(r)
+                })
+                .map_err(|e| tide::Error::from_str(http::StatusCode::InternalServerError, e))
         })
-        .await
-        .map(|b| {
-            let mut r = http::Response::new(http::StatusCode::Ok);
-            r.set_body(b);
-            r.insert_header("Content-Type", "text/html").unwrap();
-            r
-        })
-        .map_err(|e| http::Error::from_str(http::StatusCode::InternalServerError, e));
-    res
+    }
 }

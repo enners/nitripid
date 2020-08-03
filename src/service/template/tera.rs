@@ -1,8 +1,9 @@
-use super::Render;
+use super::Renderer;
 use ext_tera::{Context, Tera};
 use serde::Serialize;
 use tera as ext_tera;
 
+#[derive(Clone)]
 pub struct TeraEngine {
     engine: Tera,
 }
@@ -14,7 +15,7 @@ impl TeraEngine {
     }
 }
 
-impl Render for TeraEngine {
+impl Renderer for TeraEngine {
     fn render<T: Serialize>(&self, template: &str, cx: T) -> Result<String, String> {
         let context = Context::from_serialize(cx).unwrap();
         match self.engine.render(template, &context) {

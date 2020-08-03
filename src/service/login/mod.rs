@@ -1,22 +1,11 @@
-use crate::service::template::Render;
+use crate::service::template::Renderer;
 use serde::Serialize;
 use std::future::Future;
 use std::pin::Pin;
 use std::task::{Context, Poll};
 use tower_service::Service;
 
-pub struct Svc<T>
-where
-    T: 'static + Render,
-{
-    pub tmpl_engine: &'static T,
-}
-
-pub struct LoginRequest<T>
-where
-    T: Render + 'static,
-{
-    pub svc: Svc<T>,
+pub struct LoginRequest {
     pub usrname: &'static str,
     pub passwd: &'static str,
 }
@@ -29,11 +18,16 @@ pub struct PasswordLoginForm<'a> {
 }
 
 #[derive(Copy, Clone)]
-pub struct LoginSvc;
-
-impl<T> Service<LoginRequest<T>> for LoginSvc
+pub struct LoginSvc<T>
 where
-    T: 'static + Render,
+    T: Renderer,
+{
+    pub tmpl_engine: T,
+}
+
+impl<T> Service<LoginRequest> for LoginSvc<T>
+where
+    T: Renderer,
 {
     type Response = String;
     type Error = String;
@@ -44,10 +38,9 @@ where
         Poll::Ready(Ok(()))
     }
 
-    fn call(&mut self, req: LoginRequest<T>) -> Self::Future {
-        let page = req
-            .svc
-            .tmpl_engine
+    fn call(&mut self, _req: LoginRequest) -> Self::Future {
+        let te = self.tmpl_engine.clone();
+        let page = te
             .render(
                 "login.html",
                 PasswordLoginForm {
